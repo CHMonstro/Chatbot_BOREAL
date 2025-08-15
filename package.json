@@ -1,0 +1,16 @@
+{
+  "name": "ultima_tentativa_chatbot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "puppeteer": "^24.1.0",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.23.0"
+  },
+  "puppeteer": {
+    "skip_chromium_download": true
+  }
+}

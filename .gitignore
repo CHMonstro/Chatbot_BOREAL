@@ -1,0 +1,18 @@
+# Ignorar dependências
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Ignorar sessão do WhatsApp
+.wwebjs_auth
+.wwebjs_cache
+
+# Ignorar arquivos do sistema
+.DS_Store
+Thumbs.db
+
+# Ignorar logs
+*.log
+
+# Ignorar configs locais
+.env
