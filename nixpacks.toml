@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_18", "chromium"]
+
+[phases.build]
+cmds = ["npm install"]
+
+[phases.start]
+cmd = "npm start"
+
+[variables]
+PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium"
