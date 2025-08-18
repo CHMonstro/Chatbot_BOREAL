@@ -22,9 +22,6 @@ const PUPPETEER_ARGS = [
     '--disable-gpu'
 ];
 
-// Caminho do Chromium (Railway usa o nixpacks.toml)
-const EXECUTABLE_PATH = process.env.PUPPETEER_EXECUTABLE_PATH || null;
-
 // Garante que o arquivo de clientes atendidos existe
 if (!fs.existsSync(pathAtendidos)) {
     fs.writeFileSync(pathAtendidos, '[]');
@@ -49,7 +46,7 @@ const initClient = () => {
         puppeteer: {
             headless: true,
             args: PUPPETEER_ARGS,
-            executablePath: EXECUTABLE_PATH // aqui é usado só no Railway
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH
         }
     });
 
@@ -170,15 +167,4 @@ initClient().initialize().catch(err => {
     console.error('X Erro fatal na inicialização do bot:', err.message);
     clearSession();
     process.exit(1);
-});
-const browser = await puppeteer.launch({
-  headless: true,
-  executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
-  args: [
-    '--no-sandbox',
-    '--disable-setuid-sandbox',
-    '--disable-dev-shm-usage',
-    '--disable-gpu',
-    '--no-zygote'
-  ]
 });
