@@ -31,12 +31,12 @@ let atendidos = JSON.parse(fs.readFileSync(pathAtendidos));
 
 // Função para apagar a sessão corrompida
 const clearSession = () => {
-    console.warn('⚠️ Sessão corrompida detectada. Limpando a pasta de cache...');
+    console.warn(' Sessão corrompida detectada. Limpando a pasta de cache...');
     if (fs.existsSync(SESSION_FOLDER)) {
         fs.rmSync(SESSION_FOLDER, { recursive: true, force: true });
-        console.log('✅ Cache da sessão removido. Por favor, reinicie o bot e escaneie o QR Code novamente.');
+        console.log(' Cache da sessão removido. Por favor, reinicie o bot e escaneie o QR Code novamente.');
     } else {
-        console.log('✅ A pasta de cache não existe. Criando nova sessão.');
+        console.log(' A pasta de cache não existe. Criando nova sessão.');
     }
 };
 
@@ -46,28 +46,28 @@ const initClient = () => {
         puppeteer: {
             headless: true,
             args: PUPPETEER_ARGS,
-            executablePath: '/usr/bin/chromium-browser' // <- caminho fixo para o Chromium
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH
         }
     });
 
     // ===== EVENTOS =====
     client.on('qr', qr => {
-        console.log("📲 Escaneie este QR Code no WhatsApp da empresa:");
+        console.log(" Escaneie este QR Code no WhatsApp da empresa:");
         qrcode.generate(qr, { small: true });
     });
 
     client.on('ready', () => {
-        console.log(`✅ Bot conectado e pronto! ${new Date().toLocaleString()}`);
+        console.log(`✓ Bot conectado e pronto! ${new Date().toLocaleString()}`);
     });
 
     client.on('auth_failure', (msg) => {
-        console.error('❌ Falha na autenticação:', msg);
+        console.error(' Falha na autenticação:', msg);
         clearSession();
         process.exit(1);
     });
 
     client.on('disconnected', (reason) => {
-        console.error('❌ Cliente desconectado. Motivo:', reason);
+        console.error(' Cliente desconectado. Motivo:', reason);
         if (reason === 'DISCONNECTED') {
             console.log('Sessão encerrada pelo WhatsApp. Reiniciando o processo...');
             clearSession();
@@ -80,7 +80,7 @@ const initClient = () => {
             chat.sendStateTyping();
             await delay(tempo);
         } catch (err) {
-            console.error('❌ Erro ao simular digitação:', err.message);
+            console.error(' Erro ao simular digitação:', err.message);
         }
     }
 
@@ -88,7 +88,7 @@ const initClient = () => {
         try {
             const texto = msg.body.trim().toLowerCase();
             if (modoManutencao) {
-                await client.sendMessage(msg.from, '🚧 Assistente em manutenção. Responderemos em breve.');
+                await client.sendMessage(msg.from, ' Assistente em manutenção. Responderemos em breve.');
                 return;
             }
             if (/menu|oi|olá|ola|dia|tarde|noite/.test(texto) && msg.from.endsWith('@c.us')) {
@@ -96,7 +96,7 @@ const initClient = () => {
                 const contact = await msg.getContact();
                 const name = contact.pushname || 'cliente';
                 await digitar(chat);
-                await client.sendMessage(msg.from, `Olá, ${name.split(" ")[0]}! 👋\nSou o assistente virtual da BOREAL.\nComo posso ajudá-lo hoje? Digite o número:\n\n1 - Quem somos\n2 - Orçamento\n3 - Falar com a equipe`);
+                await client.sendMessage(msg.from, `Olá, ${name.split(" ")[0]}! \nSou o assistente virtual da BOREAL.\nComo posso ajudá-lo hoje? Digite o número:\n\n1 Quem somos\n2 Orçamento\n3 Falar com a equipe`);
             }
             if (texto === '1') {
                 const chat = await msg.getChat();
@@ -133,7 +133,7 @@ const initClient = () => {
                 await client.sendMessage(msg.from, 'Aceitamos cartões, transferências e boletos.');
             }
         } catch (err) {
-            console.error('❌ Erro no processamento da mensagem:', err.message);
+            console.error('X Erro no processamento da mensagem:', err.message);
         }
     });
 
@@ -148,7 +148,7 @@ const initClient = () => {
                     cliente.followupEnviado = true;
                     fs.writeFileSync(pathAtendidos, JSON.stringify(atendidos, null, 2));
                 } catch (err) {
-                    console.error('❌ Erro no envio de follow-up: ', err.message);
+                    console.error('X Erro no envio de follow-up: ', err.message);
                 }
             }
         }
@@ -158,13 +158,13 @@ const initClient = () => {
 };
 
 process.on('unhandledRejection', err => {
-    console.error('⚠️ Erro não tratado:', err.message);
+    console.error(' Erro não tratado:', err.message);
     clearSession();
     process.exit(1);
 });
 
 initClient().initialize().catch(err => {
-    console.error('❌ Erro fatal na inicialização do bot:', err.message);
+    console.error('X Erro fatal na inicialização do bot:', err.message);
     clearSession();
     process.exit(1);
 });
