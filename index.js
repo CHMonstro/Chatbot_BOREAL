@@ -2,13 +2,45 @@ const fs = require('fs');
 const qrcode = require('qrcode-terminal');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
+
+// Conecta no Supabase
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+// Funções para salvar/carregar sessão no Supabase
+async function saveSession(sessionId, sessionData) {
+    const { error } = await supabase
+        .from('whatsapp_sessions')
+        .upsert({ id: sessionId, session_data: sessionData, updated_at: new Date() });
+
+    if (error) console.error('Erro ao salvar sessão:', error.message);
+    else console.log('Sessão salva no Supabase com sucesso.');
+}
+
+async function loadSession(sessionId) {
+    const { data, error } = await supabase
+        .from('whatsapp_sessions')
+        .select('session_data')
+        .eq('id', sessionId)
+        .single();
+
+    if (error && error.code === 'PGRST116') {
+        console.warn('Nenhuma sessão encontrada. Gerando novo QR Code...');
+        return null;
+    }
+    if (error) {
+        console.error('Erro ao carregar sessão:', error.message);
+        return null;
+    }
+    return data.session_data;
+}
 
 // ===== CONFIGURAÇÕES =====
 const delay = ms => new Promise(res => setTimeout(res, ms));
 const modoManutencao = false;
+const SESSION_ID = "boreal_bot";
 
 const pathAtendidos = './clientes_atendidos.json';
-const SESSION_FOLDER = path.join(__dirname, '.wwebjs_auth');
 
 // Configurações do Puppeteer para ambientes de servidor
 const PUPPETEER_ARGS = [
@@ -29,20 +61,14 @@ if (!fs.existsSync(pathAtendidos)) {
 
 let atendidos = JSON.parse(fs.readFileSync(pathAtendidos));
 
-// Função para apagar a sessão corrompida
-const clearSession = () => {
-    console.warn(' Sessão corrompida detectada. Limpando a pasta de cache...');
-    if (fs.existsSync(SESSION_FOLDER)) {
-        fs.rmSync(SESSION_FOLDER, { recursive: true, force: true });
-        console.log(' Cache da sessão removido. Por favor, reinicie o bot e escaneie o QR Code novamente.');
-    } else {
-        console.log(' A pasta de cache não existe. Criando nova sessão.');
-    }
-};
+const initClient = async () => {
+    // Carrega a sessão do Supabase antes de inicializar o cliente
+    const sessionData = await loadSession(SESSION_ID);
 
-const initClient = () => {
     const client = new Client({
-        authStrategy: new LocalAuth({ clientId: "boreal_bot" }),
+        // Adiciona a sessão carregada e um custom auth store
+        session: sessionData,
+        authStrategy: new LocalAuth({ clientId: SESSION_ID }),
         puppeteer: {
             headless: true,
             args: PUPPETEER_ARGS,
@@ -60,9 +86,13 @@ const initClient = () => {
         console.log(`✓ Bot conectado e pronto! ${new Date().toLocaleString()}`);
     });
 
+    client.on('authenticated', (session) => {
+        // Salva a sessão no Supabase após a autenticação
+        saveSession(SESSION_ID, session);
+    });
+
     client.on('auth_failure', (msg) => {
         console.error(' Falha na autenticação:', msg);
-        clearSession();
         process.exit(1);
     });
 
@@ -70,7 +100,6 @@ const initClient = () => {
         console.error(' Cliente desconectado. Motivo:', reason);
         if (reason === 'DISCONNECTED') {
             console.log('Sessão encerrada pelo WhatsApp. Reiniciando o processo...');
-            clearSession();
             process.exit(1);
         }
     });
@@ -159,12 +188,10 @@ const initClient = () => {
 
 process.on('unhandledRejection', err => {
     console.error(' Erro não tratado:', err.message);
-    clearSession();
     process.exit(1);
 });
 
 initClient().initialize().catch(err => {
     console.error('X Erro fatal na inicialização do bot:', err.message);
-    clearSession();
     process.exit(1);
 });
