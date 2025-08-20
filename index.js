@@ -1,21 +1,14 @@
 const fs = require('fs');
 const qrcode = require('qrcode-terminal');
-const { Client, NoAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, NoAuth } = require('whatsapp-web.js'); // Removendo 'LocalAuth' para evitar conflito
+const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const dotenv = require('dotenv');
 
 dotenv.config();
 
 // Conecta no Supabase
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-    console.error('Erro: SUPABASE_URL ou SUPABASE_KEY não foram definidos no arquivo .env');
-    process.exit(1);
-}
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 // Funções para salvar/carregar sessão no Supabase
 async function saveSession(sessionId, sessionData) {
@@ -80,13 +73,11 @@ const PUPPETEER_ARGS = [
 ];
 
 const initClient = async () => {
-    // Carrega a sessão do Supabase antes de inicializar o cliente
     const sessionData = await loadSession(SESSION_ID);
 
     const client = new Client({
-        // Adiciona a sessão carregada e a estratégia NoAuth
+        // A ÚNICA alteração é aqui: estamos passando a sessão diretamente
         session: sessionData,
-        authStrategy: new NoAuth(), 
         puppeteer: {
             headless: true,
             args: PUPPETEER_ARGS,
@@ -133,7 +124,6 @@ const initClient = async () => {
     }
 
     client.on('message', async msg => {
-        // ... [O restante do seu código de mensagens permanece o mesmo] ...
         try {
             const texto = msg.body.trim().toLowerCase();
             if (modoManutencao) {
@@ -176,7 +166,6 @@ const initClient = async () => {
         }
     });
 
-    // Lógica para follow-up dos clientes
     setInterval(async () => {
         try {
             const clientes = await getClientsToFollowUp();
